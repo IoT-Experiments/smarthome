@@ -82,7 +82,7 @@ limitations under the License.
       _deviceChanged() {
         super._deviceChanged();
 
-        if (this.device.states.color.spectrumRGB) {
+        if (this.device.states.color && this.device.states.color.spectrumRGB) {
           this.$.light.icon = 'image:wb-incandescent';
         } else {
           this.$.light.icon = 'image:wb-iridescent';
@@ -121,7 +121,7 @@ limitations under the License.
       static generateRgb(id, count) {
         const nicknames = ['table lamp', 'reading lamp', 'doorway', 'stairway'];
         return {
-          id: String(id),
+          deviceId: String(id),
           properties: {
             type: 'action.devices.types.LIGHT',
             traits: [
@@ -131,13 +131,13 @@ limitations under the License.
             ],
             name: {
               defaultNames: ['Smart Light'],
-              name: `Smart Light ${id}`,
+              name: `Smart Light`,
               nicknames: [this.getNickname(nicknames, id, count)],
             },
             willReportState: false,
             roomHint: '',
             deviceInfo: {
-              manufacturer: 'Smart Home Provider',
+              manufacturer: 'IoT-Experiments',
               model: 'g1337',
               swVersion: '1.0.11',
               hwVersion: '1.1',
@@ -172,7 +172,7 @@ limitations under the License.
       static generateMonochrome(id, count) {
         const nicknames = ['table lamp', 'reading lamp', 'doorway', 'stairway'];
         return {
-          id: String(id),
+          deviceId: String(id),
           properties: {
             type: 'action.devices.types.LIGHT',
             traits: [
@@ -192,7 +192,7 @@ limitations under the License.
             willReportState: false,
             roomHint: '',
             deviceInfo: {
-              manufacturer: 'Smart Home Provider',
+              manufacturer: 'IoT-Experiments',
               model: 'h1337',
               swVersion: '1.0.9',
               hwVersion: '1.0',

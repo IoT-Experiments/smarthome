@@ -61,7 +61,7 @@ limitations under the License.
           const lights = [];
           for (let i = 0; i < app.lights.length; i++) {
             lights.push({
-              id: app.lights[i].id,
+              deviceId: app.lights[i].deviceId,
               customData: app.lights[i].customData,
             });
           }
@@ -112,7 +112,7 @@ limitations under the License.
          */
         static generate(id, count) {
           return {
-            id: String(id),
+            deviceId: String(id),
             properties: {
               type: 'action.devices.types.SCENE',
               traits: [

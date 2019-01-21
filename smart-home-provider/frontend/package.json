@@ -1,7 +1,7 @@
 {
-  "name": "smart-light",
-  "version": "0.0.1",
-  "description": "Smart Light virtual device",
+  "name": "smart-home-frontend",
+  "version": "1.0.0",
+  "description": "SmartHome frontend",
   "directories": {
     "test": "test"
   },

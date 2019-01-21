@@ -14,44 +14,22 @@
 /* eslint require-jsdoc: "off" */
 /* eslint valid-jsdoc: "off" */
 
-let Config = {};
+let configFromFile = require(process.env.CONFIG ? process.env.CONFIG : '../../data/config.dev.js');
 
-Config.devPortSmartHome = '3000';
-// Client id that Google will use
-Config.smartHomeProviderGoogleClientId = 'ZxjqWpsYj3';
-// Client secret that Google will use
-Config.smartHomeProvideGoogleClientSecret = 'hIMH3uWlMVrqa7FAbKLBoNUMCyLCtv';
-// Client API Key generated on the console
-Config.smartHomeProviderApiKey = '<API_KEY>';
-// Client service key to use for reporting state
-Config.jwt = require('./jwt-key.json');
+let exportConfig = configFromFile;
+
+exportConfig.devPortSmartHome = '3000';
 // Running server locally using ngrok
-Config.isLocal = false;
-// If true, all devices will be cleared when the frontend page refreshes
-Config.enableReset = true;
+exportConfig.isLocal = false;
 
 function init() {
   process.argv.forEach(function(value, i, arr) {
-    if (value.includes('smart-home=')) {
-      Config.smartHomeProviderCloudEndpoint = value.split('=')[1];
-    } else if (value.includes('isLocal')) {
-      Config.isLocal = true;
+    if (value.includes('isLocal')) {
+      exportConfig.isLocal = true;
     }
   });
-  if (!Config.smartHomeProviderCloudEndpoint) {
-    Config.smartHomeProviderCloudEndpoint = 'http://localhost:3000';
-  }
-  console.log('config: ', Config);
+  console.log('config: ', exportConfig);
 }
 init();
 
-exports.devPortSmartHome = Config.devPortSmartHome;
-exports.smartHomeProviderGoogleClientId =
-  Config.smartHomeProviderGoogleClientId;
-exports.smartHomeProvideGoogleClientSecret =
-  Config.smartHomeProvideGoogleClientSecret;
-exports.smartHomeProviderCloudEndpoint = Config.smartHomeProviderCloudEndpoint;
-exports.smartHomeProviderApiKey = Config.smartHomeProviderApiKey;
-exports.jwt = Config.jwt;
-exports.isLocal = Config.isLocal;
-exports.enableReset = Config.enableReset;
+module.exports = exportConfig;

@@ -134,7 +134,7 @@ limitations under the License.
     <app-header condenses reveals effects="waterfall">
       <app-toolbar>
         <paper-icon-button id="account" icon="account-box" on-tap="_showAccount"></paper-icon-button>
-        <div main-title>Smart Home Provider</div>
+        <div main-title>IoT-Experiments Smart Home</div>
         <paper-icon-button id="add" icon="add"></paper-icon-button>
       </app-toolbar>
     </app-header>
@@ -378,13 +378,21 @@ limitations under the License.
 
   <script>
     const SMART_HOME_PROVIDER_CLOUD_ENDPOINT = '/smart-home-api';
-    let nextDeviceId = 0;
-    /*
-     * @return { number } Properties of this class
+
+    /**
+     * Generates a GUID string.
+     * @returns {String} The generated GUID.
+     * @example af8a8416-6e18-a307-bd9c-f2c947bbb3aa
+     * @author Slavik Meltser (slavik@meltser.info).
+     * @link http://slavik.meltser.info/?p=142
      */
-    const getNextDeviceId = () => {
-      return nextDeviceId++;
-    };
+    const guid = () => {
+        function _p8(s) {
+            var p = (Math.random().toString(16)+"000000000").substr(2,8);
+            return s ? "-" + p.substr(0,4) + "-" + p.substr(4,4) : p ;
+        }
+        return _p8() + _p8(true) + _p8(true) + _p8();
+    }
 
     /**
      * Container class which manages smart devices.
@@ -485,24 +493,20 @@ limitations under the License.
        * Callback that runs when the HTML element is created.
        */
       connectedCallback() {
+        var self = this;
         super.connectedCallback();
-        // Reset all user devices
         window.requestAnimationFrame(() => {
-          this.$.add.addEventListener('click', (e) => this.$.modal.open());
+          //this.$.add.addEventListener('click', (e) => this.$.modal.open());
+          // - As I only manage RGB light
+          this.$.add.addEventListener('click', (e) => this._addLight());
+
           this._auth()
-            .then(() => {
-              const options = {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                  'Authorization': 'Bearer ' + AUTH_TOKEN,
-                },
-              };
-              return fetch(SMART_HOME_PROVIDER_CLOUD_ENDPOINT +
-                '/reset-devices', options);
+            .then(function() {
+              return self._refresh();
             });
         });
       }
+
 
       /**
        * Shows message in a progress dialog box.
@@ -566,6 +570,7 @@ limitations under the License.
        * @return {Promise} A promise that runs when the HTTP call is done.
        */
       _refresh() {
+        var self = this;
         const options = {
           method: 'POST',
           headers: {
@@ -578,86 +583,83 @@ limitations under the License.
           .then(function(response) {
             return response.json();
           }).then(function(json) {
+            var devices = {};
             delete json.uid;
             for (const key in json) {
-              this.devices[key] = json[key];
+              devices[key] = json[key];
             }
-            console.log(this.devices);
-            this._handleRefresh();
+            self._handleRefresh(devices);
           });
       }
 
       /**
        * Handles response from server that gets current status.
        */
-      _handleRefresh() {
-        if (Object.keys(this.devices).length == 0) {
+      _handleRefresh(devices) {
+        if (Object.keys(devices).length == 0) {
           console.log('no devices');
         } else {
-          for (const id of Object.keys(this.devices)) {
-            this.devices[id].id = id;
-            delete this.devices[id].properties.id;
-            this.devices[id].states.on = false;
-            this.devices[id].states.online = false;
-            switch (this.devices[id].properties.type) {
+          for (const deviceId of Object.keys(devices)) {
+            devices[deviceId].deviceId = deviceId;
+            delete devices[deviceId].properties.deviceId;
+            switch (devices[deviceId].properties.type) {
               case 'action.devices.types.LIGHT':
-                this.app._addLight(this.devices[id]);
+                this._addLight(devices[deviceId]);
                 break;
               case 'action.devices.types.THERMOSTAT':
-                this.app._addThermostat(this.devices[id]);
+                this._addThermostat(devices[deviceId]);
                 break;
               case 'action.devices.types.SCENE':
-                this.app._addScene(this.devices[id]);
+                this._addScene(devices[deviceId]);
                 break;
               case 'action.devices.types.CAMERA':
-                this.app._addCamera(this.devices[id]);
+                this._addCamera(devices[deviceId]);
                 break;
               case 'action.devices.types.VACUUM':
-                this.devices[id].states.isRunning = false;
-                this.devices[id].states.isPaused = false;
-                this.app._addVacuum(this.devices[id]);
+                this.devices[deviceId].states.isRunning = false;
+                this.devices[deviceId].states.isPaused = false;
+                this._addVacuum(devices[deviceId]);
                 break;
               case 'action.devices.types.WASHER':
-                this.devices[id].states.isRunning = false;
-                this.devices[id].states.isPaused = false;
-                this.app._addWasher(this.devices[id]);
+                this.devices[deviceId].states.isRunning = false;
+                this.devices[deviceId].states.isPaused = false;
+                this._addWasher(devices[deviceId]);
                 break;
               case 'action.devices.types.REFRIGERATOR':
-                this.app._addRefrigerator(this.devices[id]);
+                this._addRefrigerator(devices[deviceId]);
                 break;
               case 'action.devices.types.FAN':
-                this.app._addFan(this.devices[id]);
+                this._addFan(devices[deviceId]);
                 break;
               case 'action.devices.types.KETTLE':
-                this.app._addKettle(this.devices[id]);
+                this._addKettle(devices[deviceId]);
                 break;
               case 'action.devices.types.COFFEE_MAKER':
-                this.app._addCoffeeMaker(this.devices[id]);
+                this._addCoffeeMaker(devices[deviceId]);
                 break;
               case 'action.devices.types.OUTLET':
-                this.app._addOutlet(this.devices[id]);
+                this._addOutlet(devices[deviceId]);
                 break;
               case 'action.devices.types.SWITCH':
-                this.app._addSwitch(this.devices[id]);
+                this._addSwitch(devices[deviceId]);
                 break;
               case 'action.devices.types.AIRPURIFIER':
-                this.app._addAirPurifier(this.devices[id]);
+                this._addAirPurifier(devices[deviceId]);
                 break;
               case 'action.devices.types.AC_UNIT':
-                this.app._addAcUnit(this.devices[id]);
+                this._addAcUnit(devices[deviceId]);
                 break;
               case 'action.devices.types.OVEN':
-                this.app._addOven(this.devices[id]);
+                this._addOven(devices[deviceId]);
                 break;
               case 'action.devices.types.SPRINKLER':
-                this.app._addSprinkler(this.devices[id]);
+                this._addSprinkler(devices[deviceId]);
                 break;
               default:
                 console.warn(`Unable to handle unknown device type` +
-                  `${this.devices[id].properties.type}`);
+                  `${devices[deviceId].properties.type}`);
                 break;
             }
-            nextDeviceId = parseInt(id) + 1;
           }
         }
       }
@@ -674,8 +676,7 @@ limitations under the License.
             'Authorization': 'Bearer ' + AUTH_TOKEN,
           },
         };
-        return fetch(SMART_HOME_PROVIDER_CLOUD_ENDPOINT + '/auth', options)
-          .then(fetch(SMART_HOME_PROVIDER_CLOUD_ENDPOINT + '/status', options));
+        return fetch(SMART_HOME_PROVIDER_CLOUD_ENDPOINT + '/auth', options);
       }
 
       /**
@@ -689,13 +690,13 @@ limitations under the License.
        */
       _createDevice(device) {
         this.hideNoDeviceMessage();
-        this.deviceCount++;
+        
         // If the device variable exists, resolve to use it
-        if (device && device.hasOwnProperty('id')) {
+        if (device && device.hasOwnProperty('deviceId')) {
           return Promise.resolve(device);
         }
         // Otherwise reject the variable and create a new one
-        return Promise.reject(getNextDeviceId());
+        return Promise.reject(guid());
       }
 
       /**

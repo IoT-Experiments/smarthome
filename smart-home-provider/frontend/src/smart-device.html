@@ -66,7 +66,7 @@ limitations under the License.
 
     <div class="card">
       <div id="button-bar" class="layout horizontal justified">
-        <div id="device-id" class="circle"></div>
+        <!--<div id="device-id" class="circle"></div>-->
         <div class="flex"></div>
 
         <paper-icon-button id="reportState" icon="arrow-downward" on-tap="_handleReportState"></paper-icon-button>
@@ -161,7 +161,7 @@ limitations under the License.
               this._execNameOrNicknameChange.bind(this));
 
             // Set the initial properties of common fields
-            this._smartDevice.$['device-id'].innerHTML = this.device.id;
+            //this._smartDevice.$['device-id'].innerHTML = this.device.deviceId;
             this._smartDevice.$.nickname.value =
               this.device.properties.name.nicknames[0];
             this._smartDevice.$.name.value =
@@ -183,8 +183,7 @@ limitations under the License.
        * Handles a change in the proactive reporting state.
        */
       _handleReportState() {
-        this.device.properties.willReportState =
-          !this.device.properties.willReportState;
+        this.device.properties.willReportState = !this.device.properties.willReportState;
         this._handleRegister(); // Update reporting state
         this._deviceChanged(); // Update UI
       }
@@ -206,7 +205,7 @@ limitations under the License.
         console.log(this);
         if (!this._source) {
           this._source = new EventSource(SMART_HOME_PROVIDER_CLOUD_ENDPOINT
-            + '/device-connection/' + this.device.id);
+            + '/device-connection/' + this.device.deviceId);
         }
         this._callSmartHomeProviderCloud('/register-device', 'POST',
           this.device)
@@ -232,16 +231,12 @@ limitations under the License.
         const app = document.querySelector('my-app');
         const devices = app[this.type];
         for (let i = 0; i < devices.length; i++) {
-          if (devices[i].id == this.device.id) {
+          if (devices[i].deviceId == this.device.deviceId) {
             app.removeDevice(this.type, i);
           }
         }
       }
 
-      /**
-       * Sends a call to the server to update the device state
-       * in the home graph
-       */
       reportState() {
         // Send a JSON payload with the device's updated state to HomeGraph
         // Only if enabled for this device
@@ -249,7 +244,7 @@ limitations under the License.
           return;
         }
         let report = {
-          id: this.device.id,
+          deviceId: this.device.deviceId,
           states: this.device.states,
           reportStates: this.device.reportStates,
         };
@@ -311,7 +306,7 @@ limitations under the License.
         } else {
           // going online
           this._source = new EventSource(SMART_HOME_PROVIDER_CLOUD_ENDPOINT
-            + '/device-connection/' + this.device.id);
+            + '/device-connection/' + this.device.deviceId);
           this._source.addEventListener('change', function(e) {
             this._changeState(JSON.parse(e.data));
           }.bind(this));
@@ -370,16 +365,15 @@ limitations under the License.
         if (this._smartDevice) {
           this._smartDevice.$.cloud.icon = this.device.states.online
             ? 'cloud' : 'cloud-off';
-          this._smartDevice.$.reportState.style.color =
-            this.device.properties.willReportState ? '#9bea00' : '#757575';
-          this._smartDevice.$.reportState.icon =
-            this.device.properties.willReportState
-              ? 'arrow-upward' : 'arrow-downward';
+          this._smartDevice.$.reportState.style.color = this.device.properties.willReportState
+            ? '#9bea00' : '#757575';
+          this._smartDevice.$.reportState.icon = this.device.properties.willReportState
+            ? 'arrow-upward' : 'arrow-downward';
         } else {
           this.$.cloud.icon = this.device.states.online
             ? 'cloud' : 'cloud-off';
-          this.$.reportState.style.color =
-            this.device.properties.willReportState ? '#9bea00' : '#757575';
+          this.$.reportState.style.color = this.device.properties.willReportState
+            ? '#9bea00' : '#757575';
           this.$.reportState.icon = this.device.properties.willReportState
             ? 'arrow-upward' : 'arrow-downward';
         }
@@ -397,7 +391,7 @@ limitations under the License.
         }
         this._callSmartHomeProviderCloud('/exec', 'POST', this.device)
           .then(() => {
-            console.log('>>> exec to Smart Home Provider Cloud');
+            console.log('>>> exec to IoT-Experiments Smart Home Cloud');
           });
       }
 

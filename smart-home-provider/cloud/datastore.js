@@ -38,171 +38,65 @@
  *   ...
  * }
  */
+const Datastore = require('nedb');
+const uuidv4 = require('uuid/v4');
+const _ = require('lodash');
 
 const config = require('./config-provider');
+const log = require('./logger');
+
+const db = {};
+const Auth = {};
 const Data = {};
 
-/**
- * Structure of Auth
- * {
- *   clients: {
- *      <client id>:
- *          clientSecret: <value>,
- *          uid: <value>
- *      }
- *   },
- *   tokens: {
- *      <token id>: {
- *          <uid>: {}
- *      },
- *   },
- *   users: {
- *      <uid>: {
- *          name: <username>,
- *          password: <password>,
- *          tokens: [<token id>, ...],
- *          clients: [<client id>, ...]
- *      }
- *   }
- * }
- * @type {{}}
- */
+// Devices
+db.devices = new Datastore({ autoload: true, filename: config.datastore.devicesFileLocation });
+// Users
+db.users = new Datastore({ autoload: true, filename: config.datastore.usersFileLocation, onload: err => {
+  if(err)
+    throw err;
 
+  // TODO manage users through dedicated webservices
+  Auth.getUserByUsername('rick').then(doc => {
+    if(!doc) {
+      db.users.insert({
+        uid: uuidv4(),
+        username: 'rick',
+        password: 'oldman'
+      });
+    }
+  });
+} });
+// Clients have access to the API
+db.clients = new Datastore({ autoload: true, filename: config.datastore.clientsFileLocation, onload: err => {
+  if(err)
+    throw err;
+  
+  db.clients.update(
+    { clientId: config.smartHomeProviderGoogleClientId }, 
+    { clientId: config.smartHomeProviderGoogleClientId, clientSecret: config.smartHomeProvideGoogleClientSecret },
+    { upsert: true });
+}});
+// Authcodes are used to get an access token
+db.authcodes = new Datastore({ autoload: true, filename: config.datastore.authcodesFileLocation });
+// Tokens are used to identify an user
+db.accessTokens = new Datastore({ autoload: true, filename: config.datastore.accessTokensFileLocation, onload: err => {
+  if(err)
+    throw err;
+
+} });
+// Refresh tokens are used to get new tokens
+db.refreshTokens = new Datastore({ autoload: true, filename: config.datastore.refreshTokensFileLocation });
+
+// TODO : temporary for test purposes
 /*
- * This is a set of hardcoded Auth clients and users (and their access tokens)
- * for testing this mock OAuth server. These fake users can be used just to
- * test the service. This is not real user data.
- */
-const Auth = {
-  clients: {
-    'RKkWfsi0Z9': {
-      clientId: 'RKkWfsi0Z9',
-      clientSecret: 'eToBzeBT7OwrPQO8mZHsZtLp1qhQbe',
-    },
-    'ZxjqWpsYj3': {
-      clientId: 'ZxjqWpsYj3',
-      clientSecret: 'hIMH3uWlMVrqa7FAbKLBoNUMCyLCtv',
-    },
-  },
-  tokens: {
-    'psokmCxKjfhk7qHLeYd1': {
-      uid: '1234',
-      accessToken: 'psokmCxKjfhk7qHLeYd1',
-      refreshToken: 'psokmCxKjfhk7qHLeYd1',
-      userId: '1234',
-    },
-    'bfrrLnxxWdULSh3Y9IU2cA5pw8s4ub': {
-      uid: '2345',
-      accessToken: 'bfrrLnxxWdULSh3Y9IU2cA5pw8s4ub',
-      refreshToken: 'bfrrLnxxWdULSh3Y9IU2cA5pw8s4ub',
-      userId: '2345',
-    },
-    'kmjWldncnpr2drPCIe8n5TWvNEqqz8': {
-      uid: '3456',
-      accessToken: 'kmjWldncnpr2drPCIe8n5TWvNEqqz8',
-      refreshToken: 'kmjWldncnpr2drPCIe8n5TWvNEqqz8',
-      userId: '3456',
-    },
-    'CyZEA3izOsFoTd9hH76atzStqrSYVY': {
-      uid: '4567',
-      accessToken: 'CyZEA3izOsFoTd9hH76atzStqrSYVY',
-      refreshToken: 'CyZEA3izOsFoTd9hH76atzStqrSYVY',
-      userId: '4567',
-    },
-    'JK0u11W5jFXOCZCqUzF9zf9pnNZcim': {
-      uid: '5678',
-      accessToken: 'JK0u11W5jFXOCZCqUzF9zf9pnNZcim',
-      refreshToken: 'JK0u11W5jFXOCZCqUzF9zf9pnNZcim',
-      userId: '5678',
-    },
-    '2E1KuI3rQsrj51JyWs66nAShZwMliL': {
-      uid: '6789',
-      accessToken: '2E1KuI3rQsrj51JyWs66nAShZwMliL',
-      refreshToken: '2E1KuI3rQsrj51JyWs66nAShZwMliL',
-      userId: '6789',
-    },
-    '0EFBxAWH9iBYySHFQm5xpji8LWdlxg': {
-      uid: '7890',
-      accessToken: '0EFBxAWH9iBYySHFQm5xpji8LWdlxg',
-      refreshToken: '0EFBxAWH9iBYySHFQm5xpji8LWdlxg',
-      userId: '7890',
-    },
-    '7TX3ExuETedX8WneDT48': {
-      uid: '4321',
-      accessToken: '7TX3ExuETedX8WneDT48',
-      refreshToken: '7TX3ExuETedX8WneDT48',
-      userId: '4321',
-    },
-  },
-  users: {
-    '1234': {
-      uid: '1234',
-      name: 'rick',
-      password: 'oldman',
-      tokens: ['psokmCxKjfhk7qHLeYd1'],
-    },
-    '2345': {
-      uid: '2345',
-      name: 'summer',
-      password: 'tr0y',
-      tokens: ['bfrrLnxxWdULSh3Y9IU2cA5pw8s4ub'],
-    },
-    '3456': {
-      uid: '3456',
-      name: 'beth',
-      password: 'doctor',
-      tokens: ['kmjWldncnpr2drPCIe8n5TWvNEqqz8'],
-    },
-    '4567': {
-      uid: '4567',
-      name: 'jerry',
-      password: 'b3th',
-      tokens: ['CyZEA3izOsFoTd9hH76atzStqrSYVY'],
-    },
-    '5678': {
-      uid: '5678',
-      name: 'birdperson',
-      password: 'tammy',
-      tokens: ['JK0u11W5jFXOCZCqUzF9zf9pnNZcim'],
-    },
-    '6789': {
-      uid: '6789',
-      name: 'squanchy',
-      password: 'squanchy',
-      tokens: ['2E1KuI3rQsrj51JyWs66nAShZwMliL'],
-    },
-    '7890': {
-      uid: '7890',
-      name: 'jessica',
-      password: 'br4d',
-      tokens: ['0EFBxAWH9iBYySHFQm5xpji8LWdlxg'],
-    },
-    '4321': {
-      uid: '4321',
-      name: 'morty',
-      password: 'j3ssica',
-      tokens: ['7TX3ExuETedX8WneDT48'],
-    },
-  },
-  usernames: {
-    'rick': '1234',
-    'summer': '2345',
-    'beth': '3456',
-    'jerry': '4567',
-    'birdperson': '5678',
-    'squanchy': '6789',
-    'jessica': '7890',
-    'morty': '4321',
-  },
-  authcodes: {},
-};
-
-Auth.clients[config.smartHomeProviderGoogleClientId] = {
+db.accessTokens.insert({
+  uid: uid,
   clientId: config.smartHomeProviderGoogleClientId,
-  clientSecret: config.smartHomeProvideGoogleClientSecret,
-};
-
-Data.version = 0;
+  token: uuidv4(),
+  expiresAt: new Date(Date.now() + (60 * 10000))
+});
+*/
 
 /**
  * get a full status for everything stored for a user
@@ -227,9 +121,13 @@ Data.version = 0;
  *   }
  * }
  */
-Data.getUid = function(uid) {
-  // console.log('getUid', uid);
-  return Data[uid];
+Data.getDevicesByUserUID = function(uid) {
+  return new Promise((resolve, reject) => db.devices.find({ uid: uid }, (err, docs) => {
+    if(err) {
+      return reject(err);
+    }
+    return resolve(docs);
+  }));
 };
 
 /**
@@ -246,30 +144,20 @@ Data.getUid = function(uid) {
  *   <device id>: {...},
  * }
  */
-Data.getStates = function(uid, deviceIds = undefined) {
-  // console.log('getStates', uid);
+// TODO : a sortir de 'database'
+Data.getStates = async function(uid, deviceIds = undefined) {
   let states = {};
 
-  if (!deviceIds) {
-    Object.keys(Data[uid]).forEach(function(deviceId) {
-      if (Data[uid].hasOwnProperty(deviceId)) {
-        states[deviceId] = Data[uid][deviceId].states;
-      }
-    });
-  } else {
-    for (let i = 0; i < deviceIds.length; i++) {
-      let deviceId = deviceIds[i];
-      if (Data[uid].hasOwnProperty(deviceId)) {
-        states[deviceId] = Data[uid][deviceId].states;
-      }
-    }
-  }
+  let devices = (!deviceIds) ? await Data.getDevicesByUserUID(uid) : await Data.getDevicesById(uid, deviceIds);
+  devices.forEach(function(device) {
+    states[device.deviceId] = device.states;
+  });
 
   return states;
 };
 
 /**
- * get current states for all devices stored for a user
+ * get properties for all devices stored for a user
  *
  * @param uid
  * @param deviceIds
@@ -282,120 +170,35 @@ Data.getStates = function(uid, deviceIds = undefined) {
  *   <device id>: {...},
  * }
  */
-Data.getProperties = function(uid, deviceIds = undefined) {
-  // console.log('getProperties', uid);
+Data.getProperties = async function(uid, deviceIds = undefined) {
   let properties = {};
 
-  if (!deviceIds) {
-    if (!Data.hasOwnProperty(uid)) {
-      return properties;
-    }
-    Object.keys(Data[uid]).forEach(function(deviceId) {
-      if (Data[uid].hasOwnProperty(deviceId)) {
-        properties[deviceId] = Data[uid][deviceId].properties;
-      }
-    });
-  } else {
-    for (let i = 0; i < deviceIds.length; i++) {
-      let deviceId = deviceIds[i];
-      if (Data[uid].hasOwnProperty(deviceId)) {
-        properties[deviceId] = Data[uid][deviceId].properties;
-      }
-    }
-  }
+  let devices = (!deviceIds) ? await Data.getDevicesByUserUID(uid) : await Data.getDevicesById(uid, deviceIds);
+  devices.forEach(function(device) {
+    properties[device.deviceId] = device.properties;
+  });
 
   return properties;
 };
 
-/**
- * get a status for the passed in device ids, otherwise get a full status
- *
- * @param uid
- * @param deviceIds (optional)
- * @return
- * {
- *   uid: <uid>,
- *   devices: {
- *     <device id>: {
- *       properties: {
- *         <property name>: <property value>,
- *         <property name>: <property value>
- *       },
- *       states: {
- *         <state name>: <state value>,
- *         <state name>: <state value>
- *       }
- *     },
- *     <device id>: {...},
- *     ...
- *   }
- * }
- */
-Data.getStatus = function(uid, deviceIds = undefined) {
-  // return Data.getUid(uid);
-  if (!Data[uid]) {
-    console.error('cannot getStatus of devices without first registering ' +
-        'the user!');
-    return;
-  }
-
-  // console.log('getStatus deviceIds', deviceIds);
-  if (!deviceIds || deviceIds == {} ||
-      (Object.keys(deviceIds).length === 0
-          && deviceIds.constructor === Object)) {
-    return Data.getUid(uid);
-  }
-
-  let devices = {};
-  for (let i = 0; i < deviceIds.length; i++) {
-    let curId = deviceIds[i];
-    if (!Data[uid][curId]) {
-      continue;
+Data.getDeviceById = (uid, deviceId) => {
+  return new Promise((resolve, reject) => db.devices.findOne({ "uid": uid, "deviceId": deviceId }, function (err, doc) {
+    if(err) {
+      return reject(err);
     }
-    devices[curId] = Data[uid][curId];
-    // console.log('devices[curId]', devices[curId]);
-  }
-  // console.log('devices', devices);
-  return devices;
-};
-
-/**
- * register or update a user's data
- *
- * @param uid
- * @param authToken
- */
-Data.registerUser = function(uid, authToken) {
-  if (!authToken) {
-    console.error('cannot register a user without an authToken!');
-    return;
-  }
-  if (!Data[uid]) {
-Data[uid] = {};
+    resolve(doc);
+  }));
 }
-  Auth[uid] = authToken;
-  Data.version++;
-};
 
-/**
- * removes a user from authstore
- *
- * @param uid
- * @param authToken
- */
-Data.removeUser = function(uid, authToken) {
-  if (!authToken) {
-    console.error('cannot remove a user without an authToken!');
-    return;
-  }
-  if (!Data.isValidAuth(uid, authToken)) {
-    console.error('cannot remove a user with mis-matched authToken!');
-    return;
-  }
-  delete Data[uid];
-  delete Auth[uid];
-  Data.version++;
-};
+Data.getDevicesById = (uid, deviceIds) => {
+  let req = (deviceIds) ? { "uid": uid, "deviceId": { $in: deviceIds } } : { "uid": uid };
+  return new Promise((resolve, reject) => db.devices.find(req, function (err, docs) {
+    if(err) {
+      return reject(err);
+    }
+    resolve(docs);
+  }));
+}
 
 /**
  * update a device
@@ -418,44 +221,29 @@ Data.removeUser = function(uid, authToken) {
  *   }
  * }
  */
-Data.execDevice = function(uid, device) {
-  if (!Data[uid]) {
-    console.error('cannot register a device without first registering ' +
-      'the user!');
-    return;
+Data.execDevice = async function(uid, deviceDto) {
+  let device = { deviceId: deviceDto.deviceId, uid: uid };
+  let deviceFromDatabase = await Data.getDeviceById(uid, device.deviceId) || device;
+  if (deviceDto.hasOwnProperty('properties')) {
+    device.properties = _.cloneDeep(deviceDto.properties);
   }
-  // console.log('execDevice', device);
-  if (!Data[uid][device.id]) {
-    Data[uid][device.id] = {
-      states: {},
-      properties: {},
-      executionStates: [],
-    };
+  if (deviceDto.hasOwnProperty('states')) {
+    device.states = _.cloneDeep(deviceDto.states);
   }
-  if (device.hasOwnProperty('properties')) {
-    // update properties
-    Object.keys(device.properties).forEach(function(key) {
-      if (device.properties.hasOwnProperty(key)) {
-        // console.log('property ' + key, device.properties[key]);
-        Data[uid][device.id].properties[key] = device.properties[key];
-      }
-    });
+  if (deviceDto.hasOwnProperty('executionStates')) {
+    device.executionStates = _.cloneDeep(deviceDto.executionStates);
   }
-  if (device.hasOwnProperty('states')) {
-    // update states
-    Object.keys(device.states).forEach(function(key) {
-      if (device.states.hasOwnProperty(key)) {
-        // console.log('state ' + key, device.states[key]);
-        Data[uid][device.id].states[key] = device.states[key];
-      }
-    });
+
+  if(deviceFromDatabase !== device) {
+    _.merge(deviceFromDatabase, device);
   }
-  if (device.hasOwnProperty('executionStates')) {
-    // update array of states
-    Data[uid][device.id].executionStates = device.executionStates;
-  }
-  // console.log('execDevice after', Data[uid][device.id]);
-  Data.version++;
+
+  return new Promise((resolve, reject) => db.devices.update({ "uid": uid, "deviceId": deviceDto.deviceId }, { $set: deviceFromDatabase }, { upsert: true }, (err, numberOfUpdated, upsert) => {
+    if(err) {
+      return reject(err);
+    }
+    resolve(numberOfUpdated);
+  }));
 };
 
 /**
@@ -464,39 +252,29 @@ Data.execDevice = function(uid, device) {
  * @param uid
  * @param device
  */
-Data.registerDevice = function(uid, device) {
+Data.registerDevice = async function(uid, device) {
   // wrapper for exec, since they do the same thing
-  Data.execDevice(uid, device);
+  await Data.execDevice(uid, device);
 };
 
 /**
- * resets user account, deleting all devices on page refresh
+ * resets user account, deleting all devices
  */
 Data.resetDevices = function(uid) {
-  // Deletes all devices for the user.
-  if (!Data[uid]) {
-    console.error('cannot remove a device without first registering the user!');
-    return;
-  }
   console.info('Deleting all devices for ' + uid);
-  Data[uid] = {};
-  Data.version = 0;
+
+  db.devices.remove({ uid: uid });
 };
 
 /**
- * removes a device from authstore
+ * removes a device for user
  *
  * @param uid
  * @param device
  */
 Data.removeDevice = function(uid, device) {
-  if (!Data[uid]) {
-    console.error('cannot remove a device without first registering the user!');
-    return;
-  }
-  console.info('Deleting device ' + device.id + ' for ' + uid);
-  delete Data[uid][device.id];
-  Data.version++;
+  console.info('Deleting device ' + device.deviceId + ' for ' + uid);
+  db.devices.remove({ deviceId: device.deviceId, uid: uid });
 };
 
 /**
@@ -506,24 +284,116 @@ Data.removeDevice = function(uid, device) {
  * @param authToken
  * @return {boolean}
  */
-Data.isValidAuth = function(uid, authToken) {
-  return (Data.getUid(uid));
-
-  // FIXME - reenable below once a more stable auth has been put in place
-  // if (!Data.getUid(uid) || !Auth[uid])
-  //     return false;
-  // return (authToken == Auth[uid]);
+Data.isValidAuth = async function(uid, authToken) {
+  let token = await Auth.getAccessToken(authToken);
+  return (token && token.uid === uid);
 };
 
-exports.getUid = Data.getUid;
-exports.getStatus = Data.getStatus;
+Auth.getUserByUsername = (username) => {
+  return new Promise((resolve, reject) => db.users.findOne({ "username": username }, function (err, doc) {
+    if(err) {
+      return reject(err);
+    }
+    resolve(doc);
+  }));
+}
+
+Auth.getUserByUID = (uid) => {
+  return new Promise((resolve, reject) => db.users.findOne({ "uid": uid }, function (err, doc) {
+    if(err) {
+      return reject(err);
+    }
+    resolve(doc);
+  }));
+}
+
+Auth.addAuthcode = (authcode) => {
+  return new Promise((resolve, reject) => db.authcodes.insert(authcode, function (err, doc) {
+    if(err) {
+      return reject(err);
+    }
+    resolve(doc);
+  }));
+}
+
+Auth.getAuthcode = (code) => {
+  return new Promise((resolve, reject) => db.authcodes.findOne({ "code": code }, function (err, doc) {
+    if(err) {
+      return reject(err);
+    }
+    resolve(doc);
+  }));
+}
+
+Auth.getAccessToken = (token) => {
+  return new Promise((resolve, reject) => db.accessTokens.findOne({ "token": token }, function (err, doc) {
+    if(err) {
+      return reject(err);
+    }
+    resolve(doc);
+  }));
+}
+Auth.getRefreshToken = (token) => {
+  return new Promise((resolve, reject) => db.refreshTokens.findOne({ "token": token }, function (err, doc) {
+    if(err) {
+      return reject(err);
+    }
+    resolve(doc);
+  }));
+}
+Auth.getAccessTokenByUID = (uid) => {
+  return new Promise((resolve, reject) => db.accessTokens.findOne({ "uid": uid, "expiresAt": { $gt: new Date() } }, function (err, doc) {
+    if(err) {
+      return reject(err);
+    }
+    resolve(doc);
+  }));
+}
+
+Auth.addAccessToken = (token) => {
+  return new Promise((resolve, reject) => db.accessTokens.insert(token, function (err, doc) {
+    if(err) {
+      return reject(err);
+    }
+    resolve(doc);
+  }));
+}
+Auth.addRefreshToken = (token) => {
+  return new Promise((resolve, reject) => db.refreshTokens.insert(token, function (err, doc) {
+    if(err) {
+      return reject(err);
+    }
+    resolve(doc);
+  }));
+}
+
+Auth.getClientById = (clientId) => {
+  return new Promise((resolve, reject) => db.clients.findOne({ "clientId": clientId }, function (err, doc) {
+    if(err) {
+      return reject(err);
+    }
+    resolve(doc);
+  }));
+}
+
+exports.getDevicesByUserUID = Data.getDevicesByUserUID;
 exports.getStates = Data.getStates;
 exports.getProperties = Data.getProperties;
 exports.isValidAuth = Data.isValidAuth;
-exports.registerUser = Data.registerUser;
-exports.removeUser = Data.removeUser;
 exports.execDevice = Data.execDevice;
 exports.registerDevice = Data.registerDevice;
 exports.resetDevices = Data.resetDevices;
 exports.removeDevice = Data.removeDevice;
-exports.Auth = Auth;
+exports.getDeviceById = Data.getDeviceById;
+exports.getDevicesById = Data.getDevicesById;
+
+exports.addAuthcode = Auth.addAuthcode;
+exports.getAuthcode = Auth.getAuthcode;
+exports.getUserByUsername = Auth.getUserByUsername;
+exports.getUserByUID = Auth.getUserByUID;
+exports.getAccessToken = Auth.getAccessToken;
+exports.getRefreshToken = Auth.getRefreshToken;
+exports.getAccessTokenByUID = Auth.getAccessTokenByUID;
+exports.addRefreshToken = Auth.addRefreshToken;
+exports.addAccessToken = Auth.addAccessToken;
+exports.getClientById = Auth.getClientById;

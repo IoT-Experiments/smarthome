@@ -1,12 +1,12 @@
 {
-  "name": "smart-home-app-sample",
-  "version": "0.0.1",
-  "description": "Mock implementation of device manufacturer platform to facilitate development of sample device and adapter.",
+  "name": "smart-home-provider",
+  "version": "1.0.0",
+  "description": "Implementation of device manufacturer platform.",
   "main": "index.js",
   "scripts": {
     "start": "node index.js isLocal",
     "lint": "eslint --fix \"frontend\\src\\*.html\" \"cloud\\*.js\" smart-home-app.js",
-    "test": "npm run lint && npm audit"
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "Google Inc.",
   "license": "Apache-2.0",
@@ -14,18 +14,24 @@
     "node": ">=6.2.2"
   },
   "dependencies": {
+    "actions-on-google": "^2.2.0",
     "body-parser": "^1.18.3",
+    "bunyan": "^1.8.12",
     "cors": "^2.8.4",
-    "ejs": "^2.5.7",
-    "express": "^4.16.0",
+    "ejs": "^2.5.8",
+    "express": "^4.16.3",
     "express-session": "^1.15.6",
-    "googleapis": "^27.0.0",
+    "google-auth-library": "^1.6.1",
+    "googleapis": "^32.0.0",
+    "lodash": "^4.17.10",
     "morgan": "^1.9.0",
-    "ngrok": "^2.3.0",
-    "node-fetch": "^1.6.3"
+    "nedb": "^1.8.0",
+    "ngrok": "^3.0.1",
+    "node-fetch": "^2.1.2",
+    "uuid": "^3.3.2"
   },
   "devDependencies": {
-    "eslint": "^5.1.0",
+    "eslint": "^4.19.1",
     "eslint-config-google": "^0.9.1",
     "eslint-plugin-polymer": "^0.2.1"
   }

@@ -1,15 +1,17 @@
-# Actions on Google: Smart Home sample using Node.js
+# Actions on Google: SmartHome for IoT-Experiments
 
-This sample contains a fully functioning example of a Smart Home provider
-cloud service designed to work with Actions on Google. This can be used with a
-Actions Console project to create an Action interface to your IoT devices.
-This sample includes everything you need to get started, including a mocked
-user authentication service with sample users and a user web portal to
-demonstrate the user experience when controlling their lights with your action.
+This repository is based on the source code of the "[Actions on Google: Smart Home sample using Node.js](https://github.com/actions-on-google/smart-home-nodejs)" sample.
 
-An example of a Smart Home IoT cloud engine is stored in
+This repository contains a fully functioning example of a Smart Home provider
+cloud service designed to work with Actions on Google.
+
+It's in a "work in progress" state, and is not a good example of how to do it.
+The app has been limited to an RGB lamp, with a specific payload to the device, even if the based sample is able to manage a lot more devices.
+Please read the full article on [IoT-Experiments website](https://www.iot-experiments.com).
+
+The Smart Home IoT cloud engine is stored in
 `smart-home-provider`. This consists of both the main
-`smart-home-provider-cloud.js` main web service, as well as the web portal used
+`cloud/` main web service, as well as the web portal used
 to interact with virtual devices in `frontend/`. `smart-home-provider-cloud.js`
 is the entry point to the Node.js Express app that runs the IoT cloud service,
 and handles authentication, and ultimately handles requests from the Google
@@ -20,13 +22,6 @@ The primary AoG intent handlers are stored in
 requests similar to the one your app will receive from the Google Assistant
 when SYNCing, QUERYing, or EXECuting smart home device control with your cloud.
 The path for requests to this app is '/smarthome'.
-
-This sample also includes a mock-assistant-platform module that you can use to
-locally test your Smart Home app with mocked requests for the SYNC, QUERY, and
-EXEC intents that you will receive from the Google Assistant. See below for
-instructions on how to use. It is hard coded to use the account under username
-'rick' given in `smart-home-provider/datastore.js`. However you swap the
-appropriate Bearer token in the makeReq method of the mock-assistant-platform.
 
 ## Setup Instructions
 
@@ -71,7 +66,7 @@ done securely through [JWT (JSON web tokens)](https://jwt.io/).
 1. Navigate to the [Google Cloud Console API & Services page](https://console.cloud.google.com/apis/credentials)
 1. Select **Create Credentials** and create a **Service account key**
 1. Create the account and download a JSON file.
-   Save this as `smart-home-provider/cloud/jwt-key.json`.
+   Save this as `data/jwt-key.json`.
 
 The sample already includes support for report state. To use it, create a device
 in the web frontend. Then click on the arrow icon in the top-right corner. It will
@@ -86,7 +81,11 @@ start reporting state when the state changes locally.
         bower install
         cd ..
 
-1. Run smart-home-provider-cloud.js, either locally or hosted
+1. Configure the app.
+    * If running locally, create a `data/config.dev.js` file based on the `data/config.default.js` file, and update the configuration.
+    * If running in a hosted env, create a `config.js` file based on the `data/config.default.js` file, update the configuration and set the `CONFIG` environment variable with the location of this file.
+
+1. Run index.js, either locally or hosted
     * If running locally
 
           npm install
@@ -94,7 +93,7 @@ start reporting state when the state changes locally.
 
     * If running in a hosted env,
 
-          node cloud/smart-home-provider-cloud.js smart-home="https://your_domain.com"
+          node index.js
 
 1. In the resulting output, note the config data. In particular the client ID and client Secret.
 1. In a browser, open the ngrok URL shown.
@@ -136,46 +135,6 @@ to create the project in the Actions Console, enter your Assistant settings.
 1. Start using the Google Assistant in the Actions Console to control your devices. Try saying 'turn my lights on'.
 
 :information_source: Assistant will only provide you control over items that are registered, so if you visit your front end https://xyz123.ngrok.io and click the add icon to create a device your server will receive a new SYNC command.
-
-
-### Steps for testing with mock-assistant-platform
-
-1. Set up the web portal
-
-       cd smart-home-provider/frontend
-       npm install -g bower
-       bower install
-       cd ..
-
-1. Run smart-home-provider-cloud.js, either locally or hosted
-
-       npm install
-
-    * If running locally:
-
-          npm start
-
-    * If running in a hosted environment
-
-          node cloud/smart-home-provider-cloud.js smart-home="https://your_domain.com"
-
-1. In the resulting output, note the config data. In particular the client ID and client Secret.
-1. In a browser, open the ngrok URL shown.
-1. Log in with one of the sample user accounts, for instance
-
-       user: rick
-       password: oldman
-
-1. This is a web portal to your Smart Home devices. Configure the smart lights
-shown as you please. Click the cloud icon shown above at least one of them to
-enable it for cloud control.
-1. Use the mock-assistant platform to send requests to your Smart Home app.
-
-       cd mock-assistant-platform
-       node platform help
-       node platform url="https://<NGROK_DOMAIN>.ngrok.io/smarthome" sync
-       node platform url="https://<NGROK_DOMAIN>.ngrok.io/smarthome" query
-       node platform url="https://<NGROK_DOMAIN>.ngrok.io/smarthome" exec
 
 ### Examples of SYNC, QUERY, and EXEC requests
 
@@ -279,18 +238,9 @@ Your app will need to handle these 3 basic requests from the Google Assistant.
 
 ## References and How to report bugs
 * Actions on Google documentation: [https://developers.google.com/actions/](https://developers.google.com/actions/).
-* If you find any issues, please open a bug here on GitHub.
-* Questions are answered on [StackOverflow](https://stackoverflow.com/questions/tagged/actions-on-google).
-
-## How to make contributions?
-Please read and follow the steps in the CONTRIBUTING.md.
-
-## License
-See LICENSE.md.
+* Full article on [IoT-Experiments](https://www.iot-experiments.com)
 
 ## Terms
 Your use of this sample is subject to, and by using or downloading the sample files you agree to comply with, the [Google APIs Terms of Service](https://developers.google.com/terms/).
 
-## Google+
-Actions on Google Developers Community on Google+ [https://g.co/actionsdev](https://g.co/actionsdev).
 

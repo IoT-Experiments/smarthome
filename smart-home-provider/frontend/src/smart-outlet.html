@@ -81,7 +81,7 @@ limitations under the License.
         static generate(id, count) {
           const nicknames = ['smart plug', 'wall outlet'];
           return {
-            id: String(id),
+            deviceId: String(id),
             properties: {
               type: 'action.devices.types.OUTLET',
               traits: [
